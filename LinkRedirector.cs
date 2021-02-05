@@ -1,21 +1,32 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LinkRedirector.Model;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos.Table;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 
 namespace LinkRedirector
 {
-    public static class LinkRedirector
+    public class LinkRedirector
     {
         private static readonly string AuthorisationSecret = Environment.GetEnvironmentVariable("X-Authorization");
 
+        private readonly TelemetryClient _telemetryClient;
+
+        public LinkRedirector(TelemetryConfiguration telemetryConfiguration)
+        {
+            _telemetryClient = new TelemetryClient(telemetryConfiguration);
+        }
+
         [FunctionName("aka")]
-        public static IActionResult Run(
+        public IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "head", "put", Route = "aka/{alias}")] HttpRequest req,
             [Table("Aka", "aka", "{alias}", Connection = "AzureWebJobsStorage", Take = 1)] Aka aka,
             [Table("Aka", Connection = "AzureWebJobsStorage")] out Aka output,
@@ -48,6 +59,7 @@ namespace LinkRedirector
                         aka = new Aka {RowKey = alias, Url = url};
 
                     output = aka;
+                    
                     return new RedirectResult(url);
                 }
                 else
@@ -59,27 +71,14 @@ namespace LinkRedirector
             if (aka == null)
                 return new NotFoundResult();
 
+            _telemetryClient.TrackEvent("redirect", new Dictionary<string, string>()
+            {
+                {"alias", alias},
+                {"pk", aka.PartitionKey},
+                {"rk", aka.RowKey},
+                {"url", aka.Url}
+            });
             return new RedirectResult(aka.Url);
         }
-    }
-
-    public class Aka
-    {
-        string rowKey = "400";
-
-        public string PartitionKey { get; set; } = "aka";
-
-        public string RowKey
-        {
-            get => rowKey;
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    rowKey = value;
-            }
-        }
-
-        public string Url { get; set; }
-        public string ETag { get; } = "*";
     }
 }
