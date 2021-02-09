@@ -37,8 +37,8 @@ jobs:
       - name: Upload app ackage
         uses: actions/upload-artifact@v2
         with:
-          name: linkredirector-app
-          path: '${{ APP_BASE_NAME }}/'
+          name: '${{ env.APP_BASE_NAME }}-app'
+          path: '${{ env.APP_BASE_NAME }}/'
       - name: Setup Bicep
         uses: anthony-c-martin/setup-bicep@v0.1
       - name: build bicep
