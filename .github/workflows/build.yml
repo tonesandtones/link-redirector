@@ -36,10 +36,10 @@ jobs:
         with:
           name: linkredirector-app
           path: linkredirector/
+      - name: Setup Bicep
+        uses: anthony-c-martin/setup-bicep@v0.1
       - name: build bicep
-        uses: 'aliencube/bicep-build-actions@v0.1'
-        with:
-          files: deploy/deploy.bicep
+        run: bicep build deploy/deploy.bicep
       - name: Upload deploy scripts
         uses: actions/upload-artifact@v2
         with:
