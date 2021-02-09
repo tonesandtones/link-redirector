@@ -1,0 +1,46 @@
+name: build-package
+
+on: 
+  push:
+    branches:
+      - "main"
+  pull_request: 
+    branches:
+      - "main"
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        dotnet-version: [ '3.1.x' ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1.6.0
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      # when there's tests, `dotnet test` goes in here
+      - name: dotnet publish
+        run: dotnet publish --configuration Release -o linkredirector
+      - name: Upload app ackage
+        uses: actions/upload-artifact@v2
+        with:
+          name: linkredirector-app
+          path: linkredirector/
+      - name: build bicep
+        uses: 'aliencube/bicep-build-actions@v0.1'
+        with:
+          files: deploy/deploy.bicep
+      - name: Upload deploy scripts
+        uses: actions/upload-artifact@v2
+        with:
+          name: deploy
+          path: deploy/
