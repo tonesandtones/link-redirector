@@ -116,3 +116,4 @@ output computedStorageName string = stg.name
 output computedAkaTableName string = tableNameAka
 output computedStatsTableName string = tableNameStats
 output functionAppHostName string = functionApp.properties.defaultHostName
+output computedFunctionAppName string = functionAppName

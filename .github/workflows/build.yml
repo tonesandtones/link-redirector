@@ -9,6 +9,9 @@ on:
     branches:
       - "main"
 
+env:
+  APP_BASE_NAME: linkredirector
+
 jobs:
   build:
 
@@ -35,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: linkredirector-app
-          path: linkredirector/
+          path: '${{ APP_BASE_NAME }}/'
       - name: Setup Bicep
         uses: anthony-c-martin/setup-bicep@v0.1
       - name: build bicep
@@ -54,3 +57,18 @@ jobs:
         id: download
         uses: actions/download-artifact@v2
       - run: ls -R
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+      - name: Run ARM deploy
+        id: armdev
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.SUBSCRIPTION_ID_DEV }}
+          resourceGroupName: ${{ secrets.RG_DEV }}
+          template: ./deploy/deploy.json
+      - name: 'Run Azure webapp deploy action using publish profile credentials'
+        uses: azure/webapps-deploy@v2
+        with: 
+          app-name: ${{ steps.armdev.outputs.computedFunctionAppName }}
+          package: ${{ env.APP_BASE_NAME }}
