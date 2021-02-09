@@ -45,3 +45,12 @@ jobs:
         with:
           name: deploy
           path: deploy/
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download app package
+        id: download
+        uses: actions/download-artifact@v2
+      - run: ls -R
