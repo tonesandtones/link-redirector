@@ -67,8 +67,8 @@ jobs:
           subscriptionId: ${{ secrets.SUBSCRIPTION_ID_DEV }}
           resourceGroupName: ${{ secrets.RG_DEV }}
           template: ./deploy/deploy.json
-      - name: 'Run Azure webapp deploy action using publish profile credentials'
-        uses: azure/webapps-deploy@v2
+      - name: 'Azure functions deploy'
+        uses: Azure/functions-action@v1
         with: 
           app-name: ${{ steps.armdev.outputs.computedFunctionAppName }}
           package: '${{ env.APP_BASE_NAME }}-app'
