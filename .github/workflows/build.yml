@@ -51,7 +51,7 @@ jobs:
 
   deploy-dev:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Download app package
         id: download
@@ -71,4 +71,4 @@ jobs:
         uses: azure/webapps-deploy@v2
         with: 
           app-name: ${{ steps.armdev.outputs.computedFunctionAppName }}
-          package: ${{ env.APP_BASE_NAME }}
+          package: '${{ env.APP_BASE_NAME }}-app'
