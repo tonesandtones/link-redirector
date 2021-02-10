@@ -1,8 +1,11 @@
 
 local.settings.json
 
-# deploy.json arm template should be generated from deploy.bicep
+# /deploy/*.json arm templates are generated from *.bicep
 /deploy/deploy.json
+/deploy/keyvault.json
+
+*.private.json
 
 ### VisualStudio template
 ## Ignore Visual Studio temporary files, build results, and

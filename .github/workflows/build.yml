@@ -42,7 +42,9 @@ jobs:
       - name: Setup Bicep
         uses: anthony-c-martin/setup-bicep@v0.1
       - name: build bicep
-        run: bicep build deploy/deploy.bicep
+        run: |
+          bicep build deploy/deploy.bicep
+          bicep build deploy/keyvault.bicep
       - name: Upload deploy scripts
         uses: actions/upload-artifact@v2
         with:
@@ -60,15 +62,19 @@ jobs:
       - uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
-      - name: Run ARM deploy
-        id: armdev
-        uses: azure/arm-deploy@v1
+          enable-AzPSSession: true
+      - name: Deploy Azure resources
+        id: deploy
+        uses: azure/powershell@v1
         with:
-          subscriptionId: ${{ secrets.SUBSCRIPTION_ID_DEV }}
-          resourceGroupName: ${{ secrets.RG_DEV }}
-          template: ./deploy/deploy.json
+          inlineScript: |
+            & deploy/deploy.ps1 `
+                -ResourceGroupName ${{ secrets.RG_DEV }} `
+                -Environment dev `
+                -SubscriptionId ${{ secrets.SUBSCRIPTION_ID_DEV }} `
+                -StorageSku Standard_LRS
       - name: 'Azure functions deploy'
         uses: Azure/functions-action@v1
         with: 
-          app-name: ${{ steps.armdev.outputs.computedFunctionAppName }}
+          app-name: ${{ steps.deploy.outputs.computedFunctionAppName }}
           package: '${{ env.APP_BASE_NAME }}-app'

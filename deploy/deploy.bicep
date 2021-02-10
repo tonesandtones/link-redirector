@@ -20,11 +20,16 @@ param tableNameStats string = 'stats'
 
 param functionRuntime string = 'dotnet'
 
+param XAuthSecretResource string
+param keyVaultName string = 'default'
+
 var storageName = toLower('${appBaseName}${environmentSuffix}${uniqueString(resourceGroup().id)}')
 var functionAppName = '${appBaseName}-${environmentSuffix}-app'
 var appServiceName = '${appBaseName}-${environmentSuffix}-asp'
 var appInsightsName = '${appBaseName}-${environmentSuffix}-appinsights'
-var keyVaultName = '${appBaseName}-${environmentSuffix}-kv'
+
+//default name format is defined in keyvault.bicep
+var computedKeyVaultName = keyVaultName == 'default' ? '${appBaseName}-${environmentSuffix}-kv' : 'default'
 
 resource stg 'Microsoft.Storage/storageAccounts@2019-06-01' = {
   name: storageName
@@ -65,49 +70,76 @@ resource functionApp 'Microsoft.Web/sites@2020-06-01' = {
   name: functionAppName
   kind: 'functionapp'
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: appService.id
-    siteConfig: {
-      appSettings:[
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
-        }
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: appInsights.properties.InstrumentationKey
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: functionRuntime
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~3'
-        }
-      ]
-    }
+    // siteConfig: {
+    //   appSettings:[
+    //     {
+    //       name: 'AzureWebJobsStorage'
+    //       value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
+    //     }
+    //     {
+    //       name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+    //       value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
+    //     }
+    //     {
+    //       name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+    //       value: appInsights.properties.InstrumentationKey
+    //     }
+    //     {
+    //       name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+    //       value: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
+    //     }
+    //     {
+    //       name: 'FUNCTIONS_WORKER_RUNTIME'
+    //       value: functionRuntime
+    //     }
+    //     {
+    //       name: 'FUNCTIONS_EXTENSION_VERSION'
+    //       value: '~3'
+    //     }
+    //     {
+    //       name: 'X-Authorization'
+    //       value: '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
+    //     }
+    //   ]
+    // }
   }
 }
 
-resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
-  name: keyVaultName
-  location: location
+resource functionAppAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
+  name: '${functionApp.name}/appsettings'
+  properties:{
+    AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
+    WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
+    APPINSIGHTS_INSTRUMENTATIONKEY: appInsights.properties.InstrumentationKey
+    APPLICATIONINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
+    FUNCTIONS_WORKER_RUNTIME: functionRuntime
+    FUNCTIONS_EXTENSION_VERSION: '~3'
+    X_Authorization: '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
+  }
+  dependsOn:[
+    keyVaultAccessPolicies
+  ]
+}
+
+resource keyVaultAccessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2019-09-01' = {
+  name: any('${keyVaultName}/add')
   properties: {
-    sku: {
-      name: 'standard'
-      family: 'A'
-    }
-    tenantId: subscription().tenantId
-    accessPolicies: []
+    accessPolicies: [
+      {
+        tenantId: functionApp.identity.tenantId
+        objectId: functionApp.identity.principalId
+        permissions:{
+          secrets: [
+            'get'
+          ]
+        }
+      }
+    ]
   }
 }
 

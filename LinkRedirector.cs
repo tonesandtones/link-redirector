@@ -16,7 +16,7 @@ namespace LinkRedirector
 {
     public class LinkRedirector
     {
-        private static readonly string AuthorisationSecret = Environment.GetEnvironmentVariable("X-Authorization");
+        private static readonly string AuthorisationSecret = Environment.GetEnvironmentVariable("X_Authorization");
 
         private readonly TelemetryClient _telemetryClient;
 
