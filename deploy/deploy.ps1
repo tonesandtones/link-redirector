@@ -121,8 +121,12 @@ else {
         -generator { 
         Write-Host "Secret does not exist, generating new random value"
         Get-RandomString -Length 20 
-    } | Out-Null
+    }
     Write-Host "Finished ensuring that secret $XAuthSecretName exists"
+
+    if (-not $xAuthSecret){
+        throw "Failed to get the Key Vault secret $XAuthSecretName"
+    }
 
     $keyVaultDnsSuffix = $(Get-AzContext).Environment.AzureKeyVaultDnsSuffix
     $xAuthSecretUri = "https://$($xAuthSecret.VaultName).$keyVaultDnsSuffix/secrets/$($xAuthSecret.Name)/"
