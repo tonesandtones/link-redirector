@@ -75,6 +75,7 @@ resource functionApp 'Microsoft.Web/sites@2020-06-01' = {
   }
   properties: {
     serverFarmId: appService.id
+    httpsOnly: true
   }
 }
 
