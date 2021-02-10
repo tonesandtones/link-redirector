@@ -73,6 +73,7 @@ jobs:
                 -Environment dev `
                 -SubscriptionId ${{ secrets.SUBSCRIPTION_ID_DEV }} `
                 -StorageSku Standard_LRS
+          azPSVersion: 4.7.0 #latest at time of writing.
       - name: 'Azure functions deploy'
         uses: Azure/functions-action@v1
         with: 

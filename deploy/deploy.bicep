@@ -75,38 +75,6 @@ resource functionApp 'Microsoft.Web/sites@2020-06-01' = {
   }
   properties: {
     serverFarmId: appService.id
-    // siteConfig: {
-    //   appSettings:[
-    //     {
-    //       name: 'AzureWebJobsStorage'
-    //       value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
-    //     }
-    //     {
-    //       name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-    //       value: 'DefaultEndpointsProtocol=https;AccountName=${stg.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${listKeys(stg.id, stg.apiVersion).keys[0].value}'
-    //     }
-    //     {
-    //       name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-    //       value: appInsights.properties.InstrumentationKey
-    //     }
-    //     {
-    //       name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-    //       value: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
-    //     }
-    //     {
-    //       name: 'FUNCTIONS_WORKER_RUNTIME'
-    //       value: functionRuntime
-    //     }
-    //     {
-    //       name: 'FUNCTIONS_EXTENSION_VERSION'
-    //       value: '~3'
-    //     }
-    //     {
-    //       name: 'X-Authorization'
-    //       value: '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
-    //     }
-    //   ]
-    // }
   }
 }
 
@@ -119,7 +87,7 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
     FUNCTIONS_WORKER_RUNTIME: functionRuntime
     FUNCTIONS_EXTENSION_VERSION: '~3'
-    X_Authorization: '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
+    'X-Authorization': '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
   }
   dependsOn:[
     keyVaultAccessPolicies
