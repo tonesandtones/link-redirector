@@ -54,7 +54,7 @@ jobs:
   deploy-dev:
     needs: build
     runs-on: windows-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Download app package
         id: download
