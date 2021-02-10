@@ -1,0 +1,82 @@
+name: build-package
+
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+  pull_request: 
+    branches:
+      - "main"
+
+env:
+  APP_BASE_NAME: linkredirector
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        dotnet-version: [ '3.1.x' ]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      # when there's tests, `dotnet test` goes in here
+      - name: dotnet publish
+        run: dotnet publish --configuration Release -o linkredirector
+      - name: Upload app ackage
+        uses: actions/upload-artifact@v2
+        with:
+          name: '${{ env.APP_BASE_NAME }}-app'
+          path: '${{ env.APP_BASE_NAME }}/'
+      - name: Setup Bicep
+        uses: anthony-c-martin/setup-bicep@v0.1
+      - name: build bicep
+        run: |
+          bicep build deploy/deploy.bicep
+          bicep build deploy/keyvault.bicep
+      - name: Upload deploy scripts
+        uses: actions/upload-artifact@v2
+        with:
+          name: deploy
+          path: deploy/
+
+  deploy-dev:
+    needs: build
+    runs-on: windows-latest
+    if: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - name: Download app package
+        id: download
+        uses: actions/download-artifact@v2
+      - run: ls -R
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+          enable-AzPSSession: true
+      - name: Deploy Azure resources
+        id: deploy
+        uses: azure/powershell@v1
+        with:
+          inlineScript: |
+            & deploy/deploy.ps1 `
+                -ResourceGroupName ${{ secrets.RG_DEV }} `
+                -Environment dev `
+                -SubscriptionId ${{ secrets.SUBSCRIPTION_ID_DEV }} `
+                -StorageSku Standard_LRS
+          azPSVersion: 4.7.0 #latest at time of writing.
+      - name: 'Azure functions deploy'
+        uses: Azure/functions-action@v1
+        with: 
+          app-name: ${{ steps.deploy.outputs.computedFunctionAppName }}
+          package: '${{ env.APP_BASE_NAME }}-app'

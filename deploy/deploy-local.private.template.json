@@ -1,0 +1,7 @@
+{
+  "ResourceGroupName": "<target resource group name>",
+  "Environment": "<dev | sit | uat | prod | etc>",
+  "TenantId": "<tenant id>",
+  "SubscriptionId": "<target subscription id>",
+  "deployerOid": "<optional: needed if you're signed in with an #EXT# external AAD identity>"
+}
