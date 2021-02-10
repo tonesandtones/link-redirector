@@ -87,6 +87,7 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=${appInsights.properties.InstrumentationKey}'
     FUNCTIONS_WORKER_RUNTIME: functionRuntime
     FUNCTIONS_EXTENSION_VERSION: '~3'
+    WEBSITE_RUN_FROM_PACKAGE: '1'
     'X-Authorization': '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
   }
   dependsOn:[
