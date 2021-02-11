@@ -12,6 +12,7 @@ param deployerOid string
 param keyVaultExists bool
 
 var keyVaultName = '${appBaseName}-${environmentSuffix}-kv'
+var appInsightsName = '${appBaseName}-${environmentSuffix}-appinsights'
 
 resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
   name: keyVaultName
@@ -46,5 +47,15 @@ resource keyVaultAccessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2019-0
   }
 }
 
+resource appInsights 'Microsoft.Insights/components@2020-02-02-preview' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+  }
+}
+
 output computedKeyVaultName string = keyVaultName
 output keyVaultResourceId string = keyVault.id
+output computedAppInsightsName string = appInsightsName
