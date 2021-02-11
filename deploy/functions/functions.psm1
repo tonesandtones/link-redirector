@@ -9,15 +9,13 @@ function Get-CurrentUserAzureAdObjectId([Parameter(Mandatory = $true)] [string]$
 }
 
 function Get-OrSetKeyVaultSecret($keyVaultName, $secretName, $secretValue) {
-    $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction SilentlyContinue
-    if (-not $secret -or ($secret.SecretValueText -ne $secretValue)) {
+    $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -AsPlainText -ErrorAction SilentlyContinue
+    if (-not $secret -or ($secret -ne $secretValue)) {
         $secretValueSecure = ConvertTo-SecureString -String $secretValue -AsPlainText -Force
-        Set-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -SecretValue $secretValueSecure -ErrorAction Stop | Out-Null
-        $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -ErrorAction SilentlyContinue
+        $unused = Set-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -SecretValue $secretValueSecure
+        $secret = Get-AzKeyVaultSecret -VaultName $keyVaultName -Name $secretName -AsPlaintext
     }
-    $password = $secret.SecretValue
-    $password.MakeReadOnly()
-    return $password
+    return $secret
 }
 
 function Get-OrSetKeyVaultGeneratedSecret {

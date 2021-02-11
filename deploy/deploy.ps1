@@ -40,13 +40,14 @@ function Get-KeyVaultArmParameters([bool] $kvExists, [string] $tenantId) {
     return $params;
 }
 
-function Get-ArmParameters([string] $xAuthSecretUri, [string]$keyVaultName) {
+function Get-ArmParameters([string] $xAuthSecretUri, [string]$keyVaultName, [string]$AppInsightsApiKeySecret) {
     $params = @{
-        "appBaseName"       = $AppName;
-        "environmentSuffix" = $Environment;
-        "storageSku" = $StorageSku;
+        "appBaseName"         = $AppName;
+        "environmentSuffix"   = $Environment;
+        "storageSku"          = $StorageSku;
         "XAuthSecretResource" = $xAuthSecretUri;
-        "keyVaultName" = $keyVaultName;
+        "keyVaultName"        = $keyVaultName;
+        "AppInsightsApiKeySecretResource" = $AppInsightsApiKeySecret;
     }
 
     return $params;
@@ -124,14 +125,44 @@ else {
     }
     Write-Host "Finished ensuring that secret $XAuthSecretName exists"
 
-    if (-not $xAuthSecret){
+    if (-not $xAuthSecret) {
         throw "Failed to get the Key Vault secret $XAuthSecretName"
     }
 
+    Write-Host "Testing the existence of required secret AppInsightsApiKey"
+    $AppInsightsApiKeySecret = Get-OrSetKeyVaultGeneratedSecret `
+        -keyVaultName $expectedKvName `
+        -secretName "AppInsightsApiKey" `
+        -generator {
+        Write-Host "Secret does not exist, generating new api key"
+        $key = New-AzApplicationInsightsApiKey `
+            -ResourceGroupName $ResourceGroupName `
+            -Name $kvArmDeployResult.Outputs.computedAppInsightsName.Value `
+            -Permissions ReadTelemetry `
+            -Description "StatsCollector-$(Get-Date -Format FileDateTimeUniversal)"
+        return $key.ApiKey
+    }
+    Write-Host "Finished ensuring that secret AppInsightsApiKey exists"
+
+    Write-Host "Testing the existence of required secret AppInsightsAppId"
+    $AppInsightsResource = Get-AzApplicationInsights `
+        -ResourceGroupName $ResourceGroupName `
+        -Name $kvArmDeployResult.Outputs.computedAppInsightsName.Value
+
+    Get-OrSetKeyVaultSecret `
+        -keyVaultName $expectedKvName `
+        -secretName "AppInsightsAppId" `
+        -secretValue $AppInsightsResource.AppId | Out-Null
+    Write-Host "Finished ensuring that secret AppInsightsAppId exists"
+
     $keyVaultDnsSuffix = $(Get-AzContext).Environment.AzureKeyVaultDnsSuffix
     $xAuthSecretUri = "https://$($xAuthSecret.VaultName).$keyVaultDnsSuffix/secrets/$($xAuthSecret.Name)/"
-    
-    $armParameters = Get-ArmParameters -xAuthSecretUri $xAuthSecretUri -keyVaultName $expectedKvName
+    $AppInsightsApiKeySecretUri = "https://$($AppInsightsApiKeySecret.VaultName).$keyVaultDnsSuffix/secrets/$($AppInsightsApiKeySecret.Name)/"
+
+    $armParameters = Get-ArmParameters `
+        -xAuthSecretUri $xAuthSecretUri `
+        -keyVaultName $expectedKvName `
+        -AppInsightsApiKeySecret $AppInsightsApiKeySecretUri
     $templatePath = Join-Path $PSScriptRoot "./deploy.json"
     
     Write-Host "Starting ARM template deployment to deploy $AppName resources"
