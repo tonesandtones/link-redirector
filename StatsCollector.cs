@@ -9,7 +9,7 @@ namespace LinkRedirector
 {
     public class StatsCollector
     {
-        private const string timerSchedule = "0 */5 * * * *";
+        private const string timerSchedule = "0 0 0 0 * *";
         
         [FunctionName("StatsCollector")]
         public void Run(
