@@ -86,6 +86,7 @@ resource functionAppAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
     'X-Authorization': '@Microsoft.KeyVault(SecretUri=${XAuthSecretResource})'
     AppInsightsApiKey: '@Microsoft.KeyVault(SecretUri=${AppInsightsApiKeySecretResource})'
     AppInsightsAppId: reference(resourceId('Microsoft.Insights/components', appInsightsName), '2020-02-02-preview').AppId
+    'AzureWebJobs.StatsCollector.Disabled': 'true'
   }
   dependsOn:[
     keyVaultAccessPolicies
